@@ -1,0 +1,79 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Allergy Risk</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body { margin:0; font-family: Arial, Helvetica, sans-serif; }
+    #map { height: 70vh; width: 100%; }
+    .legend { background:white; padding:8px; border-radius:6px; box-shadow:0 0 8px rgba(0,0,0,0.2); }
+    .info-box { padding:10px; max-width:900px; margin:10px auto; }
+    img.backup { max-width:100%; height:auto; display:block; margin:10px auto; border:1px solid #ddd; }
+    ul#city-list { list-style:none; padding-left:0; }
+    ul#city-list li { margin-bottom:6px; }
+  </style>
+</head>
+<body>
+  <div class="info-box">
+    <h1>Allergy Risk</h1>
+    <p><strong>Forecast period:</strong> 2025-11-05/2025-11-08</p>
+    <p><strong>Dataset time:</strong> 0 nanoseconds</p>
+    <p>Source: CAMS forecast. Cities displayed: Milan, Paris, Venice. Markers colored by risk level.</p>
+  </div>
+
+  <div id="map" aria-label="Allergy risk map"></div>
+
+  <div class="info-box">
+    <h3>City summary</h3>
+    <ul id="city-list"></ul>
+    <p>Static map (backup):</p>
+    <img class="backup" src="europe_allergy_cities.png" alt="Static allergy risk map"/>
+  </div>
+
+  <script>
+    const cities = [{"name": "Milan", "lat": 45.4642, "lon": 9.19, "value": 0.0177846010774374, "category": "safe"}, {"name": "Paris", "lat": 48.8566, "lon": 2.3522, "value": 0.01039445586502552, "category": "safe"}, {"name": "Venice", "lat": 45.4408, "lon": 12.3155, "value": 0.011388609185814857, "category": "safe"}];
+    const map = L.map('map').setView([47.0, 8.0], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const colorMap = {"safe": "green", "moderate": "orange", "high": "red", "unknown": "gray"};
+
+    cities.forEach(c => {
+      if (!isFinite(c.lat) || !isFinite(c.lon)) return;
+      const cat = c.category || 'unknown';
+      const col = colorMap[cat] || 'gray';
+      const radius = (cat === 'high') ? 12 : (cat === 'moderate') ? 9 : (cat === 'safe') ? 7 : 6;
+      const circle = L.circleMarker([c.lat, c.lon], {
+        color: '#000', weight: 1, fillColor: col, fillOpacity: 0.9, radius: radius
+      }).addTo(map);
+      const popupHtml = `<div><strong>${c.name}</strong></div>
+                         <div>Score: ${(c.value !== null && !isNaN(c.value)) ? c.value.toFixed(1) : 'N/A'}</div>
+                         <div>Category: ${c.category}</div>`;
+      circle.bindPopup(popupHtml);
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>${c.name}</strong>: ${c.category} (${(c.value !== null && !isNaN(c.value)) ? c.value.toFixed(1) : 'N/A'})`;
+      document.getElementById('city-list').appendChild(li);
+    });
+
+    const legend = L.control({position: 'bottomright'});
+    legend.onAdd = function(map) {
+      const div = L.DomUtil.create('div', 'legend');
+      div.innerHTML += '<div style="margin-bottom:6px"><strong>Risk levels</strong></div>';
+      for (const [k,v] of Object.entries(colorMap)) {
+        div.innerHTML += `<div style="display:flex;align-items:center;margin:4px 0;">
+                            <span style="display:inline-block;width:18px;height:18px;background:${v};border:1px solid #000;margin-right:8px;"></span>
+                            <span style="text-transform:capitalize;">${k}</span>
+                          </div>`;
+      }
+      return div;
+    };
+    legend.addTo(map);
+  </script>
+</body>
+</html>

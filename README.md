@@ -31,5 +31,3 @@ The script uses:
 
 ---
 
-## 🧩 Project Structure
-
